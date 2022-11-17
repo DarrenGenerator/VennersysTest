@@ -47,5 +47,10 @@ namespace TestAPIs.Services
             return customerContext.SaveChanges();
         }
 
+        public int Delete(Customer customer)
+        {
+            customerContext.Customers.Remove(customer);
+            return customerContext.SaveChanges();
+        }
     }
 }
