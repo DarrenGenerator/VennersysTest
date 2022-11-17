@@ -17,10 +17,10 @@ namespace TestAPIs
 
             var builder = WebApplication.CreateBuilder(args);
 
-            //local test db
+            //local test db           
             using (CustomerContext context = new())
             {
-                context.Database.EnsureCreated();  
+                context.Database.EnsureCreated();
             };
 
             builder.Services.AddCors(options =>

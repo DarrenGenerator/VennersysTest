@@ -25,7 +25,7 @@
             <div class="col-2"><input type="text" id="editFirstName" /></div>
             <div class="col-2"><label>LastName: </label></div>
             <div class="col-2"><input type="text" id="editLastName" /></div>
-            <div class="col-2"><input type="button" id="editButton" value="Add" /></div>
+            <div class="col-2"><input type="button" id="editButton" value="Add" /><input type="button" id="deleteButton" value="Delete" style="display: none;" /></div>
         </div>
     </div>
     <div class="row pb-3 col-7">
@@ -61,6 +61,14 @@
             $('#selectCustomer').append($('<option />').text(" ~ Add New ~ ").val(0));
         }
 
+        function clearEditFields() {
+            $("#currentId").text("");
+            $("#editFirstName").val("");
+            $("#editLastName").val("");
+            $("#deleteButton").hide();
+            $("#editButton").prop('value', "Add");
+        }
+
         //on search, populate dropdown, default to "Add new"
         $('#search').click(function () {
             $.ajax({
@@ -89,7 +97,6 @@
         //on select change, 
         //	if select val = 0 change button to add
         //	empty edit fields
-
         //	if select val > 0 change button to update
         //	put vals into edit fields
         $('#selectCustomer').change(function () {
@@ -102,6 +109,7 @@
             var editButtonCaption = "Add";
             var currentId = "";
 
+            $("#deleteButton").hide();
             if(selectedId > 0)
             {
                 var selectedName = $("#selectCustomer :selected").text();
@@ -110,6 +118,7 @@
                 editLastName = names[1];
                 currentId = selectedId
                 editButtonCaption =  "Update";
+                $("#deleteButton").show();
             }
 
             $("#currentId").text(currentId);
@@ -133,13 +142,28 @@
             clearDropdown();
         });
 
+        $('#deleteButton').click(function () {
+            var selectedId = $("#selectCustomer :selected").val();
+
+            if(selectedId >  0)
+            {
+                deleteCustomer(selectedId);
+                $('#status').html("Customer Deleted");
+
+                clearEditFields();
+                clearDropdown();
+            }
+        });
+
         function addCustomer(){
+            var addJson = JSON.stringify({ "firstName": $("#editFirstName").val(), "lastName": $("#editLastName").val() });
+
             $.ajax({
                 url: "https://localhost:1052/customer/add",
                 type: "put",
                 crossDomain: true,
                 dataType: "json",
-                data: JSON.stringify({ "firstName": $("#editFirstName").val(), "lastName": $("#editLastName").val() }),
+                data: addJson,
                 contentType: "application/json; charset=utf-8",
                 success: function (data) {
                     $('#status').html("Customer Added");
@@ -152,12 +176,33 @@
             });
         }
 
+        function deleteCustomer(id){
+            var deleteJson = JSON.stringify({ "ID": id });
+
+            $.ajax({
+                url: "https://localhost:1052/customer/delete",
+                type: "delete",
+                crossDomain: true,
+                dataType: "json",
+                data: deleteJson,
+                contentType: "application/json; charset=utf-8",
+                success: function (data) {
+                    $('#status').html("Customer Deleted");
+                },
+                error: function (data) {
+                    $('#status').html("An Error Occurred:");
+                    console.log('Error Deleting Customer');
+                    console.log(data)
+                }
+            });
+        }
+
         function updateCustomer(id){
             var updateJson = JSON.stringify({ "ID": id, "firstName": $("#editFirstName").val(), "lastName": $("#editLastName").val() });
 
             $.ajax({
                 url: "https://localhost:1052/customer/update",
-                type: "put",
+                type: "patch",
                 crossDomain: true,
                 dataType: "json",
                 data: updateJson,

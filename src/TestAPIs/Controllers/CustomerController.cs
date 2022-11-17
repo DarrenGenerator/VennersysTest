@@ -55,7 +55,20 @@ namespace TestAPIs.Controllers
             }
         }
 
-        [HttpPut(template: "Update")]
+        [HttpDelete(template: "Delete")]
+        public IActionResult Delete(Customer customer)
+        {
+            try
+            {
+                return Ok(customerServices.Delete(customer));
+            }
+            catch (Exception)
+            {
+                return StatusCode(500);
+            }
+        }
+
+        [HttpPatch(template: "Update")]
         public IActionResult Update(Customer customer)
         {
             try

@@ -9,5 +9,7 @@ namespace TestAPIs.Interfaces
         Customer GetById(int id);
         List<Customer> Search(string? searchFilter = "");
         int Update(Customer customer);
+
+        int Delete(Customer customer);
     }
 }
