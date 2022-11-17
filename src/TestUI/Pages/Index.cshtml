@@ -1,0 +1,207 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Test Home page";
+}
+
+@*Darren Sibson - 16 Nov 2022*@
+
+<div class="text-center">
+    <div class="form-group">
+        <div class="row pb-3 col-7">
+            <div class="col-3"><label>Search:</label></div>
+            <div class="col-3"><input type="text" id="searchFilter" /></div>
+            <div class="col-2"><input type="button" id="search" value="Search" /></div>
+        </div>
+
+        <div class="row pb-3 col-6">
+            <div class="col-3"><label>Add/Update:</label></div>
+            <div class="col-3"><select id="selectCustomer"></select></div>
+        </div>
+
+        <div class="row pb-3 col-12">
+            <div class="col-2"><label>ID:</label><label id="currentId"></label></div>
+            <div class="col-2"><label>FirstName: </label></div>
+            <div class="col-2"><input type="text" id="editFirstName" /></div>
+            <div class="col-2"><label>LastName: </label></div>
+            <div class="col-2"><input type="text" id="editLastName" /></div>
+            <div class="col-2"><input type="button" id="editButton" value="Add" /></div>
+        </div>
+    </div>
+    <div class="row pb-3 col-7">
+        <div class="col-2"><input type="button" id="getAll" value="Get All" /></div>
+    </div>
+    <div>
+        <div id="status" class="text-info"></div>
+    </div>
+    <div>
+        <div id="results"></div>
+    </div>
+
+    <script>
+        $(document).ready(function () {
+            //on load, clear dropdown
+            clearDropdown();
+        });
+
+        function updateDropdown(returnedCustomers) {
+            clearDropdown();
+
+            for (var i = 0, len = returnedCustomers.length; i < len; ++i) {
+                $('#selectCustomer').append(
+                    $('<option />')
+                        .text(returnedCustomers[i].firstName + " " + returnedCustomers[i].lastName)
+                        .val(returnedCustomers[i].id)
+                );
+            }
+        }
+
+        function clearDropdown() {
+            $('#selectCustomer').empty();
+            $('#selectCustomer').append($('<option />').text(" ~ Add New ~ ").val(0));
+        }
+
+        //on search, populate dropdown, default to "Add new"
+        $('#search').click(function () {
+            $.ajax({
+                url: "https://localhost:1052/customer/search?searchFilter=" + $("#searchFilter").val(),
+                type: "GET",
+                crossDomain: true,
+                dataType: "json",
+                contentType: "application/json; charset=utf-8",
+                success: function (data) {
+                    var returnedCustomers = JSON.parse(JSON.stringify(data));
+
+                    if (returnedCustomers.length > 0) {
+                        $('#status').html("Customers found");
+                    }
+
+                    updateDropdown(returnedCustomers);
+                },
+                error: function (data) {
+                    $('#status').html("An Error Occurred:");
+                    console.log('Error when Searching');
+                    console.log(data);
+                }
+            });
+        });
+
+        //on select change, 
+        //	if select val = 0 change button to add
+        //	empty edit fields
+
+        //	if select val > 0 change button to update
+        //	put vals into edit fields
+        $('#selectCustomer').change(function () {
+            var selectedId = $("#selectCustomer :selected").val();
+
+            console.log("Customer selected: " + selectedId);
+
+            var editFirstName = "";
+            var editLastName = "";
+            var editButtonCaption = "Add";
+            var currentId = "";
+
+            if(selectedId > 0)
+            {
+                var selectedName = $("#selectCustomer :selected").text();
+                var names = selectedName.split(" ")
+                editFirstName = names[0];
+                editLastName = names[1];
+                currentId = selectedId
+                editButtonCaption =  "Update";
+            }
+
+            $("#currentId").text(currentId);
+            $("#editFirstName").val(editFirstName);
+            $("#editLastName").val(editLastName);
+            $("#editButton").prop('value', editButtonCaption);
+        });
+
+        $('#editButton').click(function () {
+            var selectedId = $("#selectCustomer :selected").val();
+
+            if(selectedId ==  0)
+            {
+                addCustomer();
+            }
+            else
+            {
+                updateCustomer(selectedId);
+            }
+
+            clearDropdown();
+        });
+
+        function addCustomer(){
+            $.ajax({
+                url: "https://localhost:1052/customer/add",
+                type: "put",
+                crossDomain: true,
+                dataType: "json",
+                data: JSON.stringify({ "firstName": $("#editFirstName").val(), "lastName": $("#editLastName").val() }),
+                contentType: "application/json; charset=utf-8",
+                success: function (data) {
+                    $('#status').html("Customer Added");
+                },
+                error: function (data) {
+                    $('#status').html("An Error Occurred:");
+                    console.log('Error Adding Customer');
+                    console.log(data)
+                }
+            });
+        }
+
+        function updateCustomer(id){
+            var updateJson = JSON.stringify({ "ID": id, "firstName": $("#editFirstName").val(), "lastName": $("#editLastName").val() });
+
+            $.ajax({
+                url: "https://localhost:1052/customer/update",
+                type: "put",
+                crossDomain: true,
+                dataType: "json",
+                data: updateJson,
+                contentType: "application/json; charset=utf-8",
+                success: function (data) {
+                    $('#status').html("Customer " + id + "  Updated");
+                },
+                error: function (data) {
+                    $('#status').html("An Error Occurred:");
+                    console.log('Update - Error');
+                    console.log(data)
+                }
+            });
+        }
+
+        $('#getAll').click(function () {
+            $.ajax({
+                url: "https://localhost:1052/customer",
+                type: "GET",
+                crossDomain: true,
+                dataType: "json",
+                contentType: "application/json; charset=utf-8",
+                success: function (data) {
+                    var parsed_data = JSON.parse(JSON.stringify(data));
+                    var searchResults = listResults(parsed_data);
+                    $('#status').html("Get All Results:");
+                    $('#results').html(searchResults);
+                },
+                error: function (data) {
+                    $('#status').html("An Error Occurred:");
+                    console.log('Error Getting All Customers');
+                    console.log(data);
+                }
+            });
+        });
+
+        function listResults(jsonData) {
+            var results = '';
+
+            for (var i = 0, len = jsonData.length; i < len; ++i) {
+                var result = "[" + jsonData[i].firstName + " " + jsonData[i].lastName + "]";
+                results += result + "<br/>";
+            }
+
+            return results;
+        }
+    </script>
